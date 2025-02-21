@@ -1,0 +1,62 @@
+Design:
+-------
+File: main.py
+
+This web server uses Python and FastAPI library.
+FastAPI supports thousands of concurrent requests.
+
+For the rate limiter, I've implemented a simple
+logic, which adds the timestamps in a queue and
+pops them if they're more than the given rate
+limit. The logic is in the handler function becase
+if it's in a different function/class, it will
+need to be awaited and I've faced some challenges
+with asyncio in the past when asyncio tasks are
+awaited and the control can be given to another
+task which is not something we want in this case
+as the queue could be corrupted. Having the rate
+limiting logic in the handling function ensures
+that the execution for every request will finish
+before another one starts (due to GIL).
+
+The third-party /product request is launched
+in a separate asyncio task, so the /eshop_creation
+API call will return immediately. I don't wait for
+the asyncio tasks to be completed on purpose since
+the eshop_creation API call needs to return
+immediately. 
+
+Unit tests in main_test.py file.
+
+Prerequisites
+-------------
+If you don't have the imported packages installed,
+you need to use "pip install <package>" in order
+to install them before you run the server.
+Normally, I would create a Docker container with
+the required packages.
+
+Run the web server
+------------------
+Optionally set the CAPACITY and MAX_SECONDS.
+For example run the following and send continuous
+curl requests manually in order to simulate the
+429 return from the /product API.
+$ CAPACITY=3 MAX_SECONDS=2 python3 main.py
+
+If they're not set, by default CAPACITY
+is 5 and MAX_SECONDS is 1.
+$ python3 main.py
+
+Send the POST request
+---------------------
+curl  --header "Content-Type: application/json" --request POST --data '{"product_id": "123"}' http://localhost:8000/eshop_creation
+
+Stop the web server
+-------------------
+Ctrl-C
+
+Run the unit tests
+------------------
+pytest main_test.py
+
